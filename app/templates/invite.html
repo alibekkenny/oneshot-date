@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}A little something for {{ girl_name }} 💌{% endblock %}
+{% block body_class %}invite-body{% endblock %}
+
+{% block content %}
+<div class="bg-hearts" aria-hidden="true">
+  <span class="floaty a">💖</span>
+  <span class="floaty b">💌</span>
+  <span class="floaty c">🌸</span>
+  <span class="floaty d">💘</span>
+  <span class="floaty e">🌷</span>
+</div>
+
+<main id="wizard" class="wizard">
+
+  <!-- intro -->
+  <section class="panel active" data-panel="intro">
+    <div class="card">
+      <div class="big-emoji">💌</div>
+      <p class="kicker">for {{ girl_name }}</p>
+      <h1>{{ girl_name }}, will you go on a date with me?</h1>
+      <p class="lead">Say yes and we'll plan something cute together. No pressure… okay, a little. But cutely. 💕</p>
+      <div class="ask-row">
+        <button class="btn btn-yes btn-lg" data-answer-start="yes">Yes 💘</button>
+        <button class="btn btn-no" data-answer-start="no">No 🙈</button>
+      </div>
+      <button class="btn btn-ghost returning" id="returning-btn" hidden>💌 You've already answered — view your plan</button>
+    </div>
+  </section>
+
+  <!-- yes! happy gif, then into the planning -->
+  <section class="panel" data-panel="yay">
+    <div class="card">
+      <img class="reaction bounce" src="/static/happy.gif" alt="yay" />
+      <h1>Yesss! 🎉</h1>
+      <p class="lead">Okay okay — now let's plan something cute together. A few quick picks 💕</p>
+      <button class="btn btn-primary btn-lg lowered" data-next>Let's plan it →</button>
+    </div>
+  </section>
+
+  <!-- option steps -->
+  {% for step in steps %}
+  <section class="panel question" data-panel="step" data-step-key="{{ step.key }}">
+    <div class="card">
+      <p class="kicker">step {{ loop.index }} of {{ total_steps }}</p>
+      <h2>{{ step.title }}</h2>
+      <p class="lead">{{ step.subtitle }}</p>
+      <div class="options">
+        {% for opt in step.options %}
+        <button type="button" class="option" data-value="{{ opt.label }}">
+          <span class="opt-emoji">{{ opt.emoji }}</span>
+          <span class="opt-label">{{ opt.label }}</span>
+        </button>
+        {% endfor %}
+        {% if step.allow_custom %}
+        <button type="button" class="option option-custom" data-custom>
+          <span class="opt-emoji">✏️</span>
+          <span class="opt-label">Something else…</span>
+        </button>
+        {% endif %}
+      </div>
+      {% if step.allow_custom %}
+      <input type="text" class="text-input custom-input" data-custom-input hidden placeholder="type your idea…" />
+      {% endif %}
+      <div class="nav-row">
+        <button class="btn btn-ghost" data-back>← back</button>
+        <button class="btn btn-primary" data-next>next →</button>
+      </div>
+    </div>
+  </section>
+  {% endfor %}
+
+  <!-- when -->
+  <section class="panel question" data-panel="when">
+    <div class="card">
+      <p class="kicker">step {{ total_steps }} of {{ total_steps }}</p>
+      <h2>When works for you?</h2>
+      <p class="lead">Pick whatever's easiest — or write your own.</p>
+      <div class="chips">
+        <button type="button" class="chip" data-when>This weekend</button>
+        <button type="button" class="chip" data-when>Friday evening</button>
+        <button type="button" class="chip" data-when>Next week</button>
+        <button type="button" class="chip" data-when>Surprise me</button>
+      </div>
+      <input type="text" id="when-other" class="text-input" placeholder="or type a day / time…" />
+      <div class="nav-row">
+        <button class="btn btn-ghost" data-back>← back</button>
+        <button class="btn btn-primary" data-plan>all set 💕</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- done: yes -->
+  <section class="panel" data-panel="done-yes">
+    <div class="confetti" id="confetti" aria-hidden="true"></div>
+    <div class="card">
+      <img class="reaction bounce" src="/static/yes.gif" alt="happy dance" />
+      <h1>You said yes!</h1>
+      <p class="lead">I just got the happiest notification of my life. I'll text you to make it real 💌</p>
+      <div class="recap" id="recap-yes"></div>
+    </div>
+  </section>
+
+  <!-- done: no -->
+  <section class="panel" data-panel="done-no">
+    <div class="rain" id="rain" aria-hidden="true"></div>
+    <div class="card sad-card">
+      <img class="reaction sway" src="/static/sad.gif" alt="broken heart" />
+      <h1>Aw… maybe another time.</h1>
+      <p class="lead">All good, {{ girl_name }}. Thanks for tapping through anyway — the offer stays warm. ☕</p>
+    </div>
+  </section>
+
+  <!-- returning visitor: her saved submission -->
+  <section class="panel" data-panel="already">
+    <div class="card">
+      <div class="big-emoji">💌</div>
+      <h1 id="already-title">Here's what you sent 💕</h1>
+      <p class="lead" id="already-sub"></p>
+      <div class="recap" id="recap-already"></div>
+      <button class="btn btn-ghost lowered" id="restart-btn">start over</button>
+    </div>
+  </section>
+
+</main>
+{% endblock %}
+
+{% block scripts %}<script src="/static/wizard.js?v=5"></script>{% endblock %}
