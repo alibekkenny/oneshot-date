@@ -1,0 +1,14 @@
+# Secrets — provided at runtime via compose `environment:`, never baked in.
+.env
+.env.*
+
+# Git / Python / OS cruft
+.git
+.gitignore
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+.DS_Store
