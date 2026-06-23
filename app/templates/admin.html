@@ -27,6 +27,8 @@
         <th>Eating</th>
         <th>Drinking</th>
         <th>Proposed time</th>
+        <th>Note</th>
+        <th></th>
       </tr>
     </thead>
     <tbody>
@@ -41,9 +43,21 @@
         <td>{{ r.eating | join(', ') or '—' }}</td>
         <td>{{ r.drinking | join(', ') or '—' }}</td>
         <td>{{ r.proposed_when or '—' }}</td>
+        <td>
+          <form class="note-form" method="post" action="/admin/responses/{{ r.id }}/note">
+            <textarea name="note" rows="2" placeholder="add a note…">{{ r.note or '' }}</textarea>
+            <button class="btn-mini" type="submit">save</button>
+          </form>
+        </td>
+        <td>
+          <form method="post" action="/admin/responses/{{ r.id }}/delete"
+                onsubmit="return confirm('Delete this response permanently?');">
+            <button class="btn-mini btn-danger" type="submit">delete</button>
+          </form>
+        </td>
       </tr>
       {% else %}
-      <tr><td colspan="6" class="empty">No responses yet — share the link 💌</td></tr>
+      <tr><td colspan="8" class="empty">No responses yet — share the link 💌</td></tr>
       {% endfor %}
     </tbody>
   </table>

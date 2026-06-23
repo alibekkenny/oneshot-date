@@ -223,6 +223,22 @@ tr:last-child td { border-bottom: none; }
 .pill.yes { background: var(--mint); color: #1f6b43; }
 .pill.no { background: #ffe1e6; color: #b22e47; }
 
+/* admin: per-row note editor + small action buttons */
+.note-form { display: flex; gap: 8px; align-items: flex-start; }
+.note-form textarea {
+  flex: 1; min-width: 150px; font: inherit; font-size: 0.85rem; color: var(--ink);
+  padding: 6px 8px; border: 1px solid #ffe1ec; border-radius: 8px; resize: vertical;
+}
+.note-form textarea:focus { outline: none; border-color: var(--pink-400); }
+.btn-mini {
+  font: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; white-space: nowrap;
+  padding: 6px 12px; border-radius: 8px; border: 1px solid var(--pink-200);
+  background: #fff; color: var(--ink-soft);
+}
+.btn-mini:hover { border-color: var(--pink-400); color: var(--ink); }
+.btn-danger { border-color: #f3b6c2; color: #b22e47; }
+.btn-danger:hover { background: #ffe1e6; border-color: #e8869a; color: #8f1f37; }
+
 @media (max-width: 520px) {
   .options { grid-template-columns: repeat(2, 1fr); }
   .card { padding: 32px 22px; }

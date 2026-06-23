@@ -220,6 +220,38 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db)):
     )
 
 
+@app.post("/admin/responses/{response_id}/note")
+def admin_set_note(
+    response_id: int,
+    request: Request,
+    note: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    """Save (or clear) the admin's private note on one response."""
+    if not _is_admin(request):
+        return RedirectResponse("/admin/login", status_code=303)
+    row = db.get(DateResponse, response_id)
+    if row is not None:
+        text = note.strip()
+        row.note = text[:500] or None  # note column is String(500)
+        db.commit()
+    return RedirectResponse("/admin", status_code=303)
+
+
+@app.post("/admin/responses/{response_id}/delete")
+def admin_delete_response(
+    response_id: int, request: Request, db: Session = Depends(get_db)
+):
+    """Permanently remove one response (e.g. your own test attempts)."""
+    if not _is_admin(request):
+        return RedirectResponse("/admin/login", status_code=303)
+    row = db.get(DateResponse, response_id)
+    if row is not None:
+        db.delete(row)
+        db.commit()
+    return RedirectResponse("/admin", status_code=303)
+
+
 @app.get("/healthz")
 def healthz():
     return {"status": "ok"}
