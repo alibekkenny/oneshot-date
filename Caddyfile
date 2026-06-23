@@ -1,0 +1,6 @@
+# Caddy serves the public site over HTTPS and proxies to the app container.
+# SITE_ADDRESS comes from .env (e.g. alibek-date.duckdns.org). Caddy fetches a
+# Let's Encrypt cert for it automatically and redirects http -> https.
+{$SITE_ADDRESS} {
+	reverse_proxy web:8000
+}

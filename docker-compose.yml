@@ -30,7 +30,10 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       SESSION_SECRET: ${SESSION_SECRET:-please-change-me}
     ports:
-      - "8000:8000"
+      # Bind to localhost only — in prod Caddy reaches "web:8000" over the compose
+      # network, so the app is never exposed directly. (Docker would otherwise
+      # bypass ufw and publish 8000 to the whole internet.)
+      - "127.0.0.1:8000:8000"
 
 volumes:
   pgdata:

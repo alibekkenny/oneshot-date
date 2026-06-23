@@ -1,0 +1,25 @@
+# Production overlay: puts Caddy in front for automatic HTTPS.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Requires SITE_ADDRESS in .env (the domain pointing at this server), and ports
+# 80 + 443 open in the firewall.
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - web
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS in .env (your domain)}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data      # issued certs live here — persists across restarts
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:
