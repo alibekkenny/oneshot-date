@@ -36,6 +36,16 @@ app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
 
 
+@app.middleware("http")
+async def revalidate_html(request, call_next):
+    """Make HTML pages always revalidate so a new build's versioned assets are
+    picked up on the next load (the /static files themselves still cache)."""
+    response = await call_next(request)
+    if response.headers.get("content-type", "").startswith("text/html"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
+
+
 # --------------------------------------------------------------------------- #
 # Public wizard
 # --------------------------------------------------------------------------- #
