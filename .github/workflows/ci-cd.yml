@@ -1,0 +1,68 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:        # lets you trigger a deploy manually from the Actions tab
+
+# Never let two deploys run at once.
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── CI: prove the stack builds, migrates, and boots ───────────────────────
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and start the stack
+        run: docker compose up -d --build      # db + web, with compose defaults
+
+      - name: Wait for the app to become healthy
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:8000/healthz; then echo "healthy"; exit 0; fi
+            sleep 2
+          done
+          echo "::error::app did not become healthy in time"
+          exit 1
+
+      - name: Show web logs (always, for debugging)
+        if: always()
+        run: docker compose logs web
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
+
+  # ── CD: deploy to the VPS, only on main and only if CI passed ─────────────
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Skip if VPS secrets are not configured
+        id: gate
+        run: |
+          if [ -z "${{ secrets.VPS_HOST }}" ]; then
+            echo "No VPS_HOST secret set — skipping deploy (add the secrets to enable it)."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy over SSH
+        if: steps.gate.outputs.skip != 'true'
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          script_stop: true            # stop on first failing command
+          script: |
+            cd "${{ secrets.VPS_APP_DIR || '/opt/oneshot-date' }}"
+            git pull --ff-only
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+            docker image prune -f       # clean up old image layers
