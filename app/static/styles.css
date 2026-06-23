@@ -65,7 +65,9 @@ p { color: var(--ink-soft); }
 .btn.lowered { margin-top: 22px; }
 .returning { margin-top: 18px; font-size: 0.9rem; }
 .btn-yes { background: linear-gradient(135deg, var(--pink-500), var(--pink-600)); color: #fff; padding: 16px 38px; font-size: 1.15rem; box-shadow: var(--shadow-md); }
-.btn-no { background: #fff; border: 2px solid var(--pink-200); color: var(--ink-soft); transition: transform 0.18s ease; }
+.btn-no { background: #fff; border: 2px solid var(--pink-200); color: var(--ink-soft); transition: transform 0.18s ease, left 0.2s ease, top 0.2s ease; }
+/* The "No" button can't be caught — it darts to a random spot when approached. */
+.btn-no.runaway { position: fixed; z-index: 60; margin: 0; }
 
 /* ===================== INVITE WIZARD ===================== */
 .invite-body {

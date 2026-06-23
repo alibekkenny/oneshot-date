@@ -138,8 +138,54 @@
         show(indexOfPanel("done-no"));
         launchRain();
       }
+      // If the "No" button escaped to <body>, don't let it float over later screens.
+      const escapedNo = document.querySelector("body > .btn-no.runaway");
+      if (escapedNo) escapedNo.remove();
     })
   );
+
+  // The "No 🙈" button refuses to be caught — it darts to a random spot when
+  // the cursor (or a finger) gets near it. Saying no is, technically, possible.
+  const noBtn = document.querySelector('[data-answer-start="no"]');
+  if (noBtn) {
+    let roaming = false;
+    const dodge = () => {
+      if (!roaming) {
+        // position:fixed resolves against the nearest *transformed* ancestor, and
+        // the panels carry a transform from their entrance animation — that would
+        // capture the button and offset it off-screen. Re-home it on <body> (no
+        // transform there) so "fixed" is truly relative to the viewport.
+        const r = noBtn.getBoundingClientRect();
+        document.body.appendChild(noBtn);
+        noBtn.style.left = r.left + "px"; // pin to current on-screen spot first
+        noBtn.style.top = r.top + "px";
+        noBtn.classList.add("runaway");
+        roaming = true;
+        void noBtn.offsetHeight; // force reflow to commit the pinned position
+      }
+      // Use the *visible* viewport (excludes the scrollbar on desktop and the
+      // collapsible toolbar on mobile) so the button never hides off-screen.
+      const vv = window.visualViewport;
+      const vw = vv ? vv.width : document.documentElement.clientWidth;
+      const vh = vv ? vv.height : document.documentElement.clientHeight;
+      // Keep clear of the Dynamic Island / notch / home indicator (0 elsewhere).
+      const safe = (name) =>
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name)) || 0;
+      const pad = 12;
+      const minX = pad + safe("--safe-left");
+      const minY = pad + safe("--safe-top");
+      const maxX = Math.max(minX, vw - noBtn.offsetWidth - pad - safe("--safe-right"));
+      const maxY = Math.max(minY, vh - noBtn.offsetHeight - pad - safe("--safe-bottom"));
+      // Random target, then hard-clamp to [min, max] so it can't leave the screen.
+      const x = Math.min(maxX, Math.max(minX, minX + Math.random() * (maxX - minX)));
+      const y = Math.min(maxY, Math.max(minY, minY + Math.random() * (maxY - minY)));
+      noBtn.style.left = x + "px";
+      noBtn.style.top = y + "px";
+    };
+    noBtn.addEventListener("mouseenter", dodge);
+    // Touch devices have no hover, so dodge the tap itself.
+    noBtn.addEventListener("touchstart", (e) => { e.preventDefault(); dodge(); }, { passive: false });
+  }
 
   // Final step: after the picks, she taps "all set".
   // -> saves the plan + sends Telegram message #2.
