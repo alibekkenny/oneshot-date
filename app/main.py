@@ -90,7 +90,7 @@ def answer(payload: AnswerPayload, request: Request, db: Session = Depends(get_d
         msg = f"🥀 {row.girl_name} said no — it's okay."
     telegram.send_message(msg)
 
-    return {"ok": True, "id": row.id}
+    return {"ok": True, "id": row.id, "token": row.public_token}
 
 
 @app.post("/api/plan")
@@ -110,7 +110,27 @@ def plan(payload: PlanPayload, db: Session = Depends(get_db)):
     db.refresh(row)
 
     telegram.send_message(_format_plan_message(row))
-    return {"ok": True, "id": row.id}
+    return {"ok": True, "id": row.id, "token": row.public_token}
+
+
+@app.get("/api/response/{token}")
+def get_response(token: str, db: Session = Depends(get_db)):
+    """Returning visitor: render her saved plan from the DB by her opaque token.
+
+    The browser only keeps the token (in localStorage); the answers live here so
+    Postgres stays the source of truth.
+    """
+    row = db.query(DateResponse).filter_by(public_token=token).first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="not found")
+    return {
+        "girl_name": row.girl_name,
+        "answer": row.answer,
+        "entertainment": row.entertainment or [],
+        "eating": row.eating or [],
+        "drinking": row.drinking or [],
+        "proposed_when": row.proposed_when,
+    }
 
 
 def _format_plan_message(row: DateResponse) -> str:

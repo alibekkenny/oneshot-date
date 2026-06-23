@@ -78,14 +78,21 @@
   const getWhen = () =>
     whenOther && whenOther.value.trim() ? whenOther.value.trim() : whenChoice;
 
-  // The id of the response row created when she first answers yes/no.
-  let responseId = null;
+  // Who this page is currently for (from the server-rendered template).
+  const GIRL_NAME = (document.getElementById("wizard")?.dataset.girlName || "").trim();
 
-  // Remember her submission on this device so she can revisit her plan.
+  // The id (transient, used in-page) and opaque token (persisted) of the row
+  // created when she first answers yes/no.
+  let responseId = null;
+  let responseToken = null;
+
+  // Remember only her token + which girl this was for. The actual answers live
+  // in the DB and are fetched back by token — Postgres stays the source of truth.
   const STORAGE_KEY = "oneshot_submission";
-  function saveSubmission(data) {
+  function saveSubmission(token) {
+    if (!token) return;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ token, girl_name: GIRL_NAME }));
     } catch (e) {}
   }
   function loadSubmission() {
@@ -94,6 +101,11 @@
     } catch (e) {
       return null;
     }
+  }
+  function clearSubmission() {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (e) {}
   }
 
   function postJSON(url, body) {
@@ -113,10 +125,11 @@
     b.addEventListener("click", () => {
       const answer = b.dataset.answerStart;
       postJSON("/api/answer", { answer }).then((data) => {
-        if (data && data.id) {
-          responseId = data.id;
+        if (data && data.id) responseId = data.id;
+        if (data && data.token) {
+          responseToken = data.token;
           // "No" is final, so remember it now; "yes" is saved after the plan.
-          if (answer === "no") saveSubmission({ id: data.id, answer: "no" });
+          if (answer === "no") saveSubmission(responseToken);
         }
       });
       if (answer === "yes") {
@@ -140,15 +153,7 @@
         proposed_when: getWhen() || null,
       };
       postJSON("/api/plan", payload).then((data) => {
-        const id = (data && data.id) || responseId;
-        saveSubmission({
-          id: id,
-          answer: "yes",
-          entertainment: payload.entertainment,
-          eating: payload.eating,
-          drinking: payload.drinking,
-          proposed_when: payload.proposed_when,
-        });
+        saveSubmission((data && data.token) || responseToken);
       });
       fillRecap(payload);
       show(indexOfPanel("done-yes"));
@@ -200,21 +205,39 @@
   // Returning visitor: if she already answered on this device, offer to view it.
   (function initReturning() {
     const prior = loadSubmission();
-    if (!prior) return;
+    // No prior answer on this device → nothing to show.
+    if (!prior || !prior.token) return;
+    // Page has since been repurposed for a different girl → the cache is stale,
+    // so drop it (don't leak the previous girl's plan to a new visitor).
+    if ((prior.girl_name || "") !== GIRL_NAME) {
+      clearSubmission();
+      return;
+    }
+
     const btn = document.getElementById("returning-btn");
     if (btn) {
       btn.hidden = false;
       btn.addEventListener("click", () => {
-        populateAlready(prior);
-        show(indexOfPanel("already"));
+        fetch("/api/response/" + encodeURIComponent(prior.token))
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data) => {
+            if (!data) {
+              // Row is gone (e.g. DB reset) → forget it and start fresh.
+              clearSubmission();
+              location.reload();
+              return;
+            }
+            populateAlready(data);
+            show(indexOfPanel("already"));
+          })
+          .catch(() => {});
       });
     }
+
     const restart = document.getElementById("restart-btn");
     if (restart) {
       restart.addEventListener("click", () => {
-        try {
-          localStorage.removeItem(STORAGE_KEY);
-        } catch (e) {}
+        clearSubmission();
         location.reload();
       });
     }
